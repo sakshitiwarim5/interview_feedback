@@ -58,17 +58,26 @@ Output JSON:
     ];
 
     console.log("> Sending Gemini Call");
-    const response = await ai.models.generateContentStream({
+    const response = await ai.models.generateContent({
       model,
       config,
       contents,
     });
-    let responseBfr = "";
-    for await (const chunk of response) {
-      responseBfr += chunk.text;
-    }
-    return responseBfr;
+    return response.text;
   } catch (error) {
     throw error;
+  }
+}
+
+export function parseAnalysisJSON(analysis_text: string) {
+  try {
+    const analysis_prepared = analysis_text
+      .replaceAll("```json", "")
+      .replaceAll("```", "")
+      .trim();
+    return JSON.parse(analysis_prepared);
+  } catch (err) {
+    console.error(err);
+    return null;
   }
 }

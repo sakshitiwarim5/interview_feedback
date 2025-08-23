@@ -31,13 +31,15 @@ export async function transcribeAudio(
         },
       ],
     };
+    const arrayBfr = await audioBlob.arrayBuffer();
+    const audioBfr = Buffer.from(arrayBfr).toString("base64");
     const contents = [
       {
         role: "user",
         parts: [
           {
             inlineData: {
-              data: await audioBlob.text(),
+              data: audioBfr,
               mimeType: audioBlob.type,
             },
           },
@@ -45,18 +47,18 @@ export async function transcribeAudio(
       },
     ];
 
-    console.log("> Sending Gemini Call")
-    const response = await ai.models.generateContentStream({
+    console.log("> Sending Gemini Call");
+    const response = await ai.models.generateContent({
       model,
       config,
       contents,
     });
-    let responseBfr = "";
-    for await (const chunk of response) {
-      console.log(chunk.text);
-      responseBfr += chunk.text;
-    }
-    return responseBfr;
+    // let responseBfr = response.text;
+    // for await (const chunk of response) {
+    //   console.log(chunk.text);
+    //   responseBfr += chunk.text;
+    // }
+    return response.text;
   } catch (error) {
     throw error;
   }

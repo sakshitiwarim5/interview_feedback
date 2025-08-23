@@ -8,7 +8,7 @@ import { extractMonoAudio } from "@/lib/audio";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { transcribeAudio } from "@/lib/transcript";
-import { getAnalysisFromTranscript } from "@/lib/analysis";
+import { getAnalysisFromTranscript, parseAnalysisJSON } from "@/lib/analysis";
 
 type Analysis = {
   recruiter: {
@@ -18,43 +18,70 @@ type Analysis = {
   attendee: {
     what_went_well: string;
     what_to_improve: string;
-    actionable_tips: string;
+    actionable_tip: string;
   };
 };
 export default function Home() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [currentPhase, setCurrentPhase] = useState<string | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function handleUpload(e: MouseEvent<HTMLButtonElement>) {
+    if (currentPhase !== null) return;
     e.preventDefault();
 
-    if (!selectedFile) {
-      toast.error("No file selected");
-      return;
-    }
-    console.log("starting analysis");
+    try {
+      if (!selectedFile) {
+        toast.error("No file selected");
+        return;
+      }
 
-    // Separate the video and audio
-    const audioTrack = await extractMonoAudio(selectedFile);
-    toast.success("audio track extracted");
-    console.log(audioTrack);
-    // Get audio transcript
-    const transcript = await transcribeAudio(audioTrack);
-    toast.success("transcript extracted");
-    console.log(transcript);
-    // Get analysis from transcript
-    const analysis = await getAnalysisFromTranscript(transcript);
-    toast.success("analysis extracted");
-    console.log(analysis);
-    // Update the analysis document
+      setCurrentPhase("Processing File");
+      // Separate the video and audio
+      const audioTrack = await extractMonoAudio(selectedFile);
+      // Get audio transcript
+      // if (currentPhase === null) {
+      //   return;
+      // }
+
+      setCurrentPhase("Transcribing Audio Track");
+      const transcript = await transcribeAudio(audioTrack);
+      if (!transcript) {
+        toast.error(
+          "Failed to get transcript for the audio. Please try again."
+        );
+        return;
+      }
+      // if (currentPhase === null) {
+      //   return;
+      // }
+      // Get analysis from transcript
+      setCurrentPhase("Analyzing Transcript");
+      const analysis_text = await getAnalysisFromTranscript(transcript);
+      if (!analysis_text) {
+        toast.error("Failed to get analysis for the audio. Please try again.");
+        return;
+      }
+      // if (currentPhase === null) {
+      //   return;
+      // }
+
+      const parsed_analysis = parseAnalysisJSON(analysis_text);
+      setAnalysis(parsed_analysis);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCurrentPhase(null);
+    }
   }
 
   function handleReset(e: MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
     setSelectedFile(null);
     setAnalysis(null);
+    setCurrentPhase(null);
 
     // TODO: Reset the selected file via ref
     if (fileRef.current) {
@@ -82,7 +109,11 @@ export default function Home() {
               }}
             />
             <div className="flex gap-4 items-center justify-center">
-              <Button onClick={handleUpload} variant="default">
+              <Button
+                onClick={handleUpload}
+                variant="default"
+                disabled={currentPhase !== null}
+              >
                 Upload
               </Button>
               <Button onClick={handleReset} variant="secondary">
@@ -92,6 +123,12 @@ export default function Home() {
           </div>
         </CardContent>
       </Card>
+      {currentPhase && (
+        <div className="inline-flex items-center justify-start gap-4 p-3 mx-auto">
+          <span className="animate-spin w-6 h-6 border-2 border-gray-700 border-r-transparent rounded-full"></span>
+          <span className="capitalize text-2xl">{currentPhase}</span>
+        </div>
+      )}
       {analysis && (
         <Card className="mt-6 w-full max-w-2xl">
           <CardHeader>
@@ -129,7 +166,7 @@ export default function Home() {
                 </p>
                 <p>
                   <strong>Actionable Tips:</strong>{" "}
-                  {analysis.attendee.actionable_tips}
+                  {analysis.attendee.actionable_tip}
                 </p>
               </div>
             </div>
