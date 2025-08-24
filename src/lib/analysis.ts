@@ -75,6 +75,7 @@ export function parseAnalysisJSON(analysis_text: string) {
       .replaceAll("```json", "")
       .replaceAll("```", "")
       .trim();
+    console.log("Raw prepared analysis:", analysis_prepared);
     return JSON.parse(analysis_prepared);
   } catch (err) {
     console.error(err);
