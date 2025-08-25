@@ -77,15 +77,7 @@ export default function UploadCard({
 
             {/* Centered buttons */}
             <div className="flex gap-6 justify-center mt-4">
-              {/* <Button
-                onClick={onUpload}
-                variant="default"
-                disabled={disabled}
-                className="flex items-center gap-2 px-10 py-3 text-lg font-medium bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl shadow-md transition-all"
-              >
-                <Upload className="w-5 h-5" />
-                Upload
-              </Button> */}
+             
               <Button
                 onClick={(e) => {
                   onUpload(e);
